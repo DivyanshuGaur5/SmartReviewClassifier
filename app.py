@@ -6,6 +6,7 @@ from scipy.sparse import hstack
 
 model = joblib.load('model.pkl')
 vectorizer = joblib.load('vectorizer.pkl')
+scaler = joblib.load('scaler.pkl')
 
 st.title("Smart Review Filter")
 st.subheader("Detect whether a product review is genuine or fake")
@@ -20,9 +21,19 @@ if st.button("Predict"):
         cleaned = clean_texts([user_review])
         vectorized = vectorizer.transform(cleaned)
 
-        extra_feature = np.array([[1 if is_frequent else 0]])
+        reviewer_freq = 1 if is_frequent else 0
 
-        final_input = hstack([vectorized, extra_feature])
+        word_count = len(user_review.split())
+        char_count = len(user_review)
+
+        length_features = np.array([[word_count, char_count]])
+        length_scaled = scaler.transform(length_features)
+
+        reviewer_freq_array = np.array([[reviewer_freq]])
+
+        final_numeric = np.hstack([reviewer_freq_array, length_scaled])
+
+        final_input = hstack([vectorized, final_numeric])
 
         prediction = int(model.predict(final_input)[0])
         prob = model.predict_proba(final_input)[0][prediction]
